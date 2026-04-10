@@ -1,0 +1,36 @@
+# Terraform — these contain real infrastructure values and state
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+terraform.tfvars
+terraform.tfvars.json
+.terraform.lock.hcl   # optional — some teams commit this, we won't
+
+# Secrets and credentials — NEVER commit these
+.env
+.env.*
+*.pem
+*.p12
+*.key
+*.crt
+secrets.json
+
+.claude
+PLAN.md
+
+# .NET build output
+backend/*/bin/
+backend/*/obj/
+*.user
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# macOS
+.DS_Store
+
+# Local dev config overrides (may contain local secrets)
+backend/*/appsettings.Development.json

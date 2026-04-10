@@ -1,0 +1,30 @@
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    platform: linux/arm64
+    container_name: chatsec-dynamodb
+    ports:
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+
+  redis:
+    image: redis:7-alpine
+    platform: linux/arm64
+    container_name: chatsec-redis
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+      platforms:
+        - linux/arm64
+    container_name: chatsec-api
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - dynamodb-local
+      - redis
