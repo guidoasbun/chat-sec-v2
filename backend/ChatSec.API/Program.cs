@@ -1,6 +1,8 @@
 using Amazon.DynamoDBv2;
 using ChatSec.API.Middleware;
 using ChatSec.API.Services;
+using StackExchange.Redis;
+using ChatSec.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,6 +67,17 @@ if (!string.IsNullOrEmpty(redisConnection))
     signalRBuilder.AddStackExchangeRedis(redisConnection);
 }
 
+// ── Redis Connection ──────────────────────────────────────────────────────────
+// IConnectionMultiplexer is the StackExchange.Redis connection — shared as a
+// singleton because opening connections is expensive. OnlineUserService uses this
+// to read/write the online_users set directly (separate from the SignalR backplane).
+if (!string.IsNullOrEmpty(redisConnection))
+{
+    builder.Services.AddSingleton<IConnectionMultiplexer>(
+        ConnectionMultiplexer.Connect(redisConnection));
+}
+builder.Services.AddSingleton<OnlineUserService>();
+
 // ── Authentication ────────────────────────────────────────────────────────────
 // Validates JWT tokens issued by AWS Cognito on every protected request.
 // The token contains the user's identity — we never store passwords ourselves.
@@ -105,6 +118,6 @@ if (!string.IsNullOrEmpty(cognitoUserPoolId))
 }
 
 app.MapControllers();  // Route HTTP requests to controller methods
-// app.MapHub<ChatHub>("/hubs/chat"); // Uncomment when ChatHub.cs is created
+app.MapHub<ChatHub>("/hubs/chat"); // Uncomment when ChatHub.cs is created
 
 app.Run();
