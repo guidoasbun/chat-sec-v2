@@ -26,7 +26,7 @@ public class ChatController : ControllerBase
         {
             ChatId       = Guid.NewGuid().ToString(),
             Participants = request.Participants,
-            EncryptedKeyBundles = new Dictionary<string, string>(), // filled in Phase 3
+            EncryptedKeyBundles = request.EncryptedKeyBundles,
             CreatedAt    = DateTime.UtcNow.ToString("o"),
             IsActive     = true
         };
@@ -44,4 +44,18 @@ public class ChatController : ControllerBase
         var messages = await _dynamo.GetMessagesAsync(chatId);
         return Ok(messages);
     }
+
+    // GET /api/chat/{chatId}
+    // Returns chat metadata including encryptedKeyBundles so participants
+    // can decrypt their copy of the AES session key.
+    [HttpGet("{chatId}")]
+    public async Task<IActionResult> GetChat(string chatId)
+    {
+        var chat = await _dynamo.GetChatAsync(chatId);
+        if (chat == null)
+            return NotFound(new { error = "Chat not found." });
+
+        return Ok(chat);
+    }
+
 }

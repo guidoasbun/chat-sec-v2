@@ -25,9 +25,10 @@ public class AuthController : ControllerBase
         // Validate required fields
         if (string.IsNullOrWhiteSpace(request.Username) ||
             string.IsNullOrWhiteSpace(request.Password) ||
-            string.IsNullOrWhiteSpace(request.PublicKey))
+            string.IsNullOrWhiteSpace(request.PublicKey) ||
+            string.IsNullOrWhiteSpace(request.SigningPublicKey))
         {
-            return BadRequest(new { error = "Username, password, and public key are required." });
+            return BadRequest(new { error = "Username, password, public key, and signing public key are required." });
         }
 
         // Check username is not already taken
@@ -43,10 +44,11 @@ public class AuthController : ControllerBase
 
         var user = new User
         {
-            UserId    = userId,
-            Username  = request.Username,
-            PublicKey = request.PublicKey,
-            CreatedAt = DateTime.UtcNow.ToString("o") // ISO 8601 format
+            UserId           = userId,
+            Username         = request.Username,
+            PublicKey        = request.PublicKey,
+            SigningPublicKey  = request.SigningPublicKey,
+            CreatedAt        = DateTime.UtcNow.ToString("o") // ISO 8601 format
         };
 
         await _db.PutUserAsync(user);

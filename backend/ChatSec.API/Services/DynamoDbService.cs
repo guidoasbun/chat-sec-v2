@@ -31,10 +31,11 @@ public class DynamoDbService
             TableName = UsersTable,
             Item = new Dictionary<string, AttributeValue>
             {
-                ["userId"]    = new AttributeValue { S = user.UserId },
-                ["username"]  = new AttributeValue { S = user.Username },
-                ["publicKey"] = new AttributeValue { S = user.PublicKey },
-                ["createdAt"] = new AttributeValue { S = user.CreatedAt }
+                ["userId"]           = new AttributeValue { S = user.UserId },
+                ["username"]         = new AttributeValue { S = user.Username },
+                ["publicKey"]        = new AttributeValue { S = user.PublicKey },
+                ["signingPublicKey"] = new AttributeValue { S = user.SigningPublicKey },
+                ["createdAt"]        = new AttributeValue { S = user.CreatedAt }
             }
         };
 
@@ -172,10 +173,11 @@ public class DynamoDbService
 
     private static User MapToUser(Dictionary<string, AttributeValue> item) => new()
     {
-        UserId    = item.TryGetValue("userId",    out var uid) ? uid.S : string.Empty,
-        Username  = item.TryGetValue("username",  out var un)  ? un.S  : string.Empty,
-        PublicKey = item.TryGetValue("publicKey", out var pk)  ? pk.S  : string.Empty,
-        CreatedAt = item.TryGetValue("createdAt", out var ca)  ? ca.S  : string.Empty
+        UserId           = item.TryGetValue("userId",           out var uid) ? uid.S : string.Empty,
+        Username         = item.TryGetValue("username",         out var un)  ? un.S  : string.Empty,
+        PublicKey        = item.TryGetValue("publicKey",        out var pk)  ? pk.S  : string.Empty,
+        SigningPublicKey = item.TryGetValue("signingPublicKey", out var spk) ? spk.S : string.Empty,
+        CreatedAt        = item.TryGetValue("createdAt",        out var ca)  ? ca.S  : string.Empty
     };
 
     private static Chat MapToChat(Dictionary<string, AttributeValue> item) => new()
