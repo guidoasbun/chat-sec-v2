@@ -10,7 +10,7 @@ export function getConnection(userId: string): signalR.HubConnection {
         `http://localhost:5257/hubs/chat?userId=${encodeURIComponent(userId)}`,
       )
       .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Information)
+      .configureLogging(signalR.LogLevel.Warning)
       .build();
   }
   return connection;
@@ -30,8 +30,9 @@ export async function startConnection(
 }
 
 export async function stopConnection(): Promise<void> {
-  if (connection) {
-    await connection.stop();
-    connection = null;
+  const conn = connection;
+  connection = null; // Clear immediately so the next startConnection gets a fresh instance
+  if (conn) {
+    await conn.stop();
   }
 }

@@ -29,7 +29,7 @@ public class UserController : ControllerBase
         if (user == null)
             return NotFound(new { error = "User not found." });
 
-        return Ok(new { username = user.Username, publicKey = user.PublicKey });
+        return Ok(new { userId = user.UserId, username = user.Username, publicKey = user.PublicKey });
     }
 
     // GET /api/users/online
@@ -41,4 +41,23 @@ public class UserController : ControllerBase
         // TODO (Phase 2): return await _onlineUserService.GetOnlineUsersAsync();
         return Ok(new { users = Array.Empty<string>() });
     }
+
+    // GET /api/users/{userId}/keys
+    // Returns both public keys for a user by userId.
+    // Used by the chat page to verify message signatures.
+    [HttpGet("{userId}/keys")]
+    public async Task<IActionResult> GetKeysByUserId(string userId)
+    {
+        var user = await _db.GetUserByIdAsync(userId);
+        if (user == null)
+            return NotFound(new { error = "User not found." });
+
+        return Ok(new
+        {
+            userId = user.UserId,
+            publicKey = user.PublicKey,
+            signingPublicKey = user.SigningPublicKey
+        });
+    }
+
 }
