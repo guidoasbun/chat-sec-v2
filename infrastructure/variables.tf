@@ -26,6 +26,12 @@ variable "github_org" {
   type = string
 }
 
+variable "github_repo" {
+  description = "GitHub repo name (without the org prefix)"
+  type        = string
+}
+
+
 variable "environment" {
   description = "Deployment environment label (prod, staging, dev)"
   type = string
