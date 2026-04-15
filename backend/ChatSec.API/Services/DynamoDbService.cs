@@ -10,16 +10,21 @@ public class DynamoDbService
     private readonly IConfiguration _config;
     private readonly ILogger<DynamoDbService> _logger;
 
-    // Table name constants — single source of truth
-    private const string UsersTable    = "users";
-    private const string ChatsTable    = "chats";
-    private const string MessagesTable = "messages";
+    // Table names read from config so the same binary works in every environment.
+    // In production: ECS env vars DynamoDB__UsersTable etc. (chat-sec-users, etc.)
+    // In local dev:  appsettings.Development.json (users, chats, messages via DynamoDB Local)
+    private readonly string _usersTable;
+    private readonly string _chatsTable;
+    private readonly string _messagesTable;
 
     public DynamoDbService(IAmazonDynamoDB client, IConfiguration config, ILogger<DynamoDbService> logger)
     {
         _client = client;
         _config = config;
         _logger = logger;
+        _usersTable    = config["DynamoDB:UsersTable"]    ?? throw new InvalidOperationException("DynamoDB:UsersTable is not configured.");
+        _chatsTable    = config["DynamoDB:ChatsTable"]    ?? throw new InvalidOperationException("DynamoDB:ChatsTable is not configured.");
+        _messagesTable = config["DynamoDB:MessagesTable"] ?? throw new InvalidOperationException("DynamoDB:MessagesTable is not configured.");
     }
 
     // ── Users ─────────────────────────────────────────────────────────────────
@@ -28,7 +33,7 @@ public class DynamoDbService
     {
         var request = new PutItemRequest
         {
-            TableName = UsersTable,
+            TableName = _usersTable,
             Item = new Dictionary<string, AttributeValue>
             {
                 ["userId"]           = new AttributeValue { S = user.UserId },
@@ -47,7 +52,7 @@ public class DynamoDbService
     {
         var request = new GetItemRequest
         {
-            TableName = UsersTable,
+            TableName = _usersTable,
             Key = new Dictionary<string, AttributeValue>
             {
                 ["userId"] = new AttributeValue { S = userId }
@@ -66,7 +71,7 @@ public class DynamoDbService
         // Uses the GSI (Global Secondary Index) on the username attribute
         var request = new QueryRequest
         {
-            TableName = UsersTable,
+            TableName = _usersTable,
             IndexName = "username-index",
             KeyConditionExpression = "username = :username",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
@@ -87,7 +92,7 @@ public class DynamoDbService
     {
         var request = new PutItemRequest
         {
-            TableName = ChatsTable,
+            TableName = _chatsTable,
             Item = new Dictionary<string, AttributeValue>
             {
                 ["chatId"]       = new AttributeValue { S = chat.ChatId },
@@ -111,7 +116,7 @@ public class DynamoDbService
     {
         var request = new GetItemRequest
         {
-            TableName = ChatsTable,
+            TableName = _chatsTable,
             Key = new Dictionary<string, AttributeValue>
             {
                 ["chatId"] = new AttributeValue { S = chatId }
@@ -131,7 +136,7 @@ public class DynamoDbService
     {
         var request = new PutItemRequest
         {
-            TableName = MessagesTable,
+            TableName = _messagesTable,
             Item = new Dictionary<string, AttributeValue>
             {
                 ["chatId"]           = new AttributeValue { S = message.ChatId },
@@ -153,7 +158,7 @@ public class DynamoDbService
         // Queries by partition key (chatId), returns newest messages first via ScanIndexForward=false
         var request = new QueryRequest
         {
-            TableName = MessagesTable,
+            TableName = _messagesTable,
             KeyConditionExpression = "chatId = :chatId",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {

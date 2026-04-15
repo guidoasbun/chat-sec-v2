@@ -11,16 +11,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
-// Cross-Origin Resource Sharing — allows the Next.js frontend (different port)
-// to call this API. In production, CorsOrigin will be your real domain.
-var corsOrigin = builder.Configuration["App:CorsOrigin"]
-    ?? throw new InvalidOperationException("App:CorsOrigin is not configured.");
+// Cross-Origin Resource Sharing — allows the Next.js frontend (different port/domain)
+// to call this API. In production, AllowedOrigins comes from ECS env vars
+// (AllowedOrigins__0, AllowedOrigins__1). In development it comes from
+// appsettings.Development.json.
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+    ?? throw new InvalidOperationException("AllowedOrigins is not configured.");
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
-        policy.WithOrigins(corsOrigin)
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); // Required for SignalR WebSocket handshake
@@ -59,7 +61,8 @@ builder.Services.AddScoped<DynamoDbService>();
 // SignalR handles WebSocket connections for real-time messaging.
 // The Redis backplane lets messages route across multiple containers —
 // without it, a user on container A can't receive a message sent from container B.
-var redisConnection = builder.Configuration["App:RedisConnectionString"];
+// In production, Redis:Url comes from ECS env var Redis__Url (rediss:// for TLS).
+var redisConnection = builder.Configuration["Redis:Url"];
 
 var signalRBuilder = builder.Services.AddSignalR();
 if (!string.IsNullOrEmpty(redisConnection))
@@ -78,11 +81,17 @@ if (!string.IsNullOrEmpty(redisConnection))
 }
 builder.Services.AddSingleton<OnlineUserService>();
 
+// ── Health Checks ─────────────────────────────────────────────────────────────
+// The ALB target group polls GET /health every 30 seconds. If this returns non-200,
+// the ALB marks the task unhealthy and ECS replaces it.
+builder.Services.AddHealthChecks();
+
 // ── Authentication ────────────────────────────────────────────────────────────
 // Validates JWT tokens issued by AWS Cognito on every protected request.
 // The token contains the user's identity — we never store passwords ourselves.
+// In production, AWS:CognitoPoolId comes from ECS env var AWS__CognitoPoolId.
 var cognitoRegion = builder.Configuration["AWS:Region"];
-var cognitoUserPoolId = builder.Configuration["AWS:CognitoUserPoolId"];
+var cognitoUserPoolId = builder.Configuration["AWS:CognitoPoolId"];
 
 if (!string.IsNullOrEmpty(cognitoUserPoolId))
 {
@@ -117,7 +126,8 @@ if (!string.IsNullOrEmpty(cognitoUserPoolId))
     app.UseAuthorization();  // Check if user has permission
 }
 
-app.MapControllers();  // Route HTTP requests to controller methods
-app.MapHub<ChatHub>("/hubs/chat"); // Uncomment when ChatHub.cs is created
+app.MapHealthChecks("/health"); // ALB polls this every 30 seconds
+app.MapControllers();           // Route HTTP requests to controller methods
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
