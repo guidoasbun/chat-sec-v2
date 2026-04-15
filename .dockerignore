@@ -1,0 +1,18 @@
+# Exclude build output — these get regenerated inside the container.
+# Without this, COPY overwrites the NuGet restore cache that the Dockerfile
+# creates in an earlier layer, breaking dotnet publish --no-restore.
+**/bin/
+**/obj/
+
+# Node modules (large, not needed for backend image)
+**/node_modules/
+
+# Local secrets and environment files
+.env
+.env.*
+**/*.user
+
+# Terraform state (never send to Docker daemon)
+infrastructure/**/*.tfstate
+infrastructure/**/*.tfstate.*
+infrastructure/**/.terraform/
