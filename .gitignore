@@ -34,3 +34,5 @@ frontend/out/
 
 # Local dev config overrides (may contain local secrets)
 backend/*/appsettings.Development.json
+
+cookies.txt

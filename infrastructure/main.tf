@@ -50,7 +50,10 @@ module "ecs" {
   alb_cert_arn       = module.route53.alb_cert_arn
   redis_url          = module.elasticache.redis_url
   cognito_pool_id    = module.cognito.user_pool_id
+  cognito_client_id     = module.cognito.client_id
+  cognito_client_secret = module.cognito.client_secret
   domain_name        = var.domain_name
+  dynamodb_kms_key_arn  = module.dynamodb.kms_key_arn
 }
 
 module "cloudfront" {

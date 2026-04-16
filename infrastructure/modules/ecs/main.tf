@@ -87,6 +87,23 @@ resource "aws_iam_role_policy" "ecs_task" {
           "secretsmanager:GetSecretValue"
         ]
         Resource = "arn:aws:secretsmanager:${var.aws_region}:${var.aws_account_id}:secret:${var.app_name}/*"
+      },
+      {
+        Sid    = "Cognito"
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:AdminConfirmSignUp"
+        ]
+        Resource = "arn:aws:cognito-idp:${var.aws_region}:${var.aws_account_id}:userpool/*"
+      },
+      {
+        Sid    = "KMSDynamoDB"
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = var.dynamodb_kms_key_arn
       }
     ]
   })
@@ -255,7 +272,7 @@ resource "aws_ecs_task_definition" "main" {
 
   container_definitions = jsonencode([{
     name  = "${var.app_name}-api"
-    image = "${aws_ecr_repository.main.repository_url}:latest"
+    image = "${aws_ecr_repository.main.repository_url}:cognito-20260415-124440"
 
     portMappings = [{
       containerPort = 5257
@@ -273,7 +290,10 @@ resource "aws_ecs_task_definition" "main" {
       { name = "Redis__Url",                 value = var.redis_url },
       { name = "S3__MediaBucket",            value = "${var.app_name}-media-prod" },
       { name = "AllowedOrigins__0",          value = "https://${var.domain_name}" },
-      { name = "AllowedOrigins__1",          value = "https://www.${var.domain_name}" }
+      { name = "AllowedOrigins__1",          value = "https://www.${var.domain_name}" },
+      { name = "AWS__CognitoClientId",     value = var.cognito_client_id },
+      { name = "AWS__CognitoClientSecret", value = var.cognito_client_secret }
+
     ]
 
     logConfiguration = {

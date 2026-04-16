@@ -47,3 +47,21 @@ variable "domain_name" {
   description = "Root domain name"
   type        = string
 }
+
+variable "cognito_client_id" {
+  description = "Cognito App Client ID"
+  type        = string
+}
+
+variable "cognito_client_secret" {
+  description = "Cognito App Client Secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "dynamodb_kms_key_arn" {
+  description = "KMS key ARN used by DynamoDB tables (task role needs decrypt access)"
+  type        = string
+}
+
+

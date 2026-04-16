@@ -38,6 +38,7 @@ public class DynamoDbService
             {
                 ["userId"]           = new AttributeValue { S = user.UserId },
                 ["username"]         = new AttributeValue { S = user.Username },
+                ["email"]            = new AttributeValue { S = user.Email },
                 ["publicKey"]        = new AttributeValue { S = user.PublicKey },
                 ["signingPublicKey"] = new AttributeValue { S = user.SigningPublicKey },
                 ["createdAt"]        = new AttributeValue { S = user.CreatedAt }
@@ -180,6 +181,7 @@ public class DynamoDbService
     {
         UserId           = item.TryGetValue("userId",           out var uid) ? uid.S : string.Empty,
         Username         = item.TryGetValue("username",         out var un)  ? un.S  : string.Empty,
+        Email            = item.TryGetValue("email",           out var em)  ? em.S  : string.Empty,
         PublicKey        = item.TryGetValue("publicKey",        out var pk)  ? pk.S  : string.Empty,
         SigningPublicKey = item.TryGetValue("signingPublicKey", out var spk) ? spk.S : string.Empty,
         CreatedAt        = item.TryGetValue("createdAt",        out var ca)  ? ca.S  : string.Empty
