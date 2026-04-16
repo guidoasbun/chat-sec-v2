@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deriveWrappingKey, decryptPrivateKey, decryptSigningPrivateKey } from "@/utils/crypto";
+import {
+  deriveWrappingKey,
+  decryptPrivateKey,
+  decryptSigningPrivateKey,
+} from "@/utils/crypto";
 import { loadKeys } from "@/utils/keyStorage";
 import { setSessionKeys } from "@/utils/sessionKeys";
 
-const API_BASE = "http://localhost:5257";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5257";
 
 export default function LoginPage() {
   const router = useRouter();

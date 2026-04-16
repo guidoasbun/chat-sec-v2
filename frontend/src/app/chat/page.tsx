@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { startConnection, stopConnection } from "@/utils/signalr";
 import { sanitizeInput } from "@/utils/sanitize";
@@ -18,7 +18,7 @@ import {
 import { privateKey, signingPrivateKey } from "@/utils/sessionKeys";
 import type { HubConnection } from "@microsoft/signalr";
 
-const API_BASE = "http://localhost:5257";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5257";
 
 interface Message {
   messageId: string;
@@ -31,7 +31,7 @@ interface Message {
 
 type SigStatus = "pending" | "valid" | "invalid";
 
-export default function ChatPage() {
+function ChatPageInner() {
   const searchParams = useSearchParams();
   const USER_ID = searchParams.get("userId") ?? "anonymous";
 
@@ -361,5 +361,13 @@ export default function ChatPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense>
+      <ChatPageInner />
+    </Suspense>
   );
 }

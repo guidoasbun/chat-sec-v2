@@ -12,7 +12,7 @@ import {
 } from "@/utils/crypto";
 import { saveKeys } from "@/utils/keyStorage";
 
-const API_BASE = "http://localhost:5257";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5257";
 
 export default function RegisterPage() {
   const router = useRouter();
