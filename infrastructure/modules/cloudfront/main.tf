@@ -29,6 +29,25 @@ resource "aws_s3_bucket_policy" "frontend" {
   })
 }
 
+resource "aws_cloudfront_function" "spa_router" {
+  name    = "${var.app_name}-spa-router"
+  runtime = "cloudfront-js-2.0"
+  publish = true
+  code    = <<-EOT
+    function handler(event) {
+      var request = event.request;
+      var uri = request.uri;
+      if (uri.endsWith('/')) {
+        request.uri += 'index.html';
+      } else if (!uri.split('/').pop().includes('.')) {
+        request.uri += '/index.html';
+      }
+      return request;
+    }
+  EOT
+}
+
+
 # ── CloudFront Distribution ───────────────────────────────────────────────────
 
 resource "aws_cloudfront_distribution" "main" {
@@ -52,6 +71,12 @@ resource "aws_cloudfront_distribution" "main" {
     cached_methods         = ["GET", "HEAD"]
 
     cache_policy_id = "658327ea-f89d-4fab-a63d-7e88639e58f6"
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.spa_router.arn
+    }
+
   }
 
   # SPA fallback: serve index.html for any 403 (unknown path) so Next.js router works

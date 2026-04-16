@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -64,6 +65,7 @@ export default function RegisterPage() {
         credentials: "include",
         body: JSON.stringify({
           username,
+          email,
           password,
           publicKey: publicKeyPem,
           signingPublicKey: signingPublicKeyPem,
@@ -111,6 +113,14 @@ export default function RegisterPage() {
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          required
+        />
+        <input
+          className="w-full border rounded px-3 py-2 text-sm"
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
         <input
