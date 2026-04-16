@@ -1,0 +1,60 @@
+name: Backend Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "docker/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPO: 412381751532.dkr.ecr.us-east-1.amazonaws.com/chat-sec-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC — no stored keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::412381751532:role/chat-sec-github-deploy-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image tag
+        run: echo "IMAGE_TAG=$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Set up QEMU (ARM64 emulation on x86_64 runner)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ARM64 image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/backend.Dockerfile
+          platforms: linux/arm64
+          push: true
+          no-cache: true
+          provenance: false
+          tags: ${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
+
+      - name: Force new ECS deployment
+        run: |
+          aws ecs update-service \
+            --cluster chat-sec-cluster \
+            --service chat-sec-api \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}

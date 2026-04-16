@@ -5,10 +5,9 @@ let connection: signalR.HubConnection | null = null;
 
 export function getConnection(userId: string): signalR.HubConnection {
   if (!connection) {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5257";
     connection = new signalR.HubConnectionBuilder()
-      .withUrl(
-        `http://localhost:5257/hubs/chat?userId=${encodeURIComponent(userId)}`,
-      )
+      .withUrl(`${apiBase}/hubs/chat?userId=${encodeURIComponent(userId)}`)
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Warning)
       .build();

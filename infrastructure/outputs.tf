@@ -27,3 +27,14 @@ output "alb_dns_name" {
   description = "Raw ALB DNS name"
   value       = module.ecs.alb_dns_name
 }
+
+output "deploy_role_arn" {
+  description = "IAM role ARN for GitHub Actions OIDC"
+  value       = module.iam.deploy_role_arn
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID (needed for cache invalidation)"
+  value       = module.cloudfront.distribution_id
+}
+
