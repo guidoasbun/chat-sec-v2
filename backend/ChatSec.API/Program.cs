@@ -3,6 +3,9 @@ using ChatSec.API.Middleware;
 using ChatSec.API.Services;
 using StackExchange.Redis;
 using ChatSec.API.Hubs;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Amazon.CognitoIdentityProvider;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +60,10 @@ else
 // Registers our own service classes. AddScoped means one instance per HTTP request.
 builder.Services.AddScoped<DynamoDbService>();
 
+builder.Services.AddAWSService<IAmazonCognitoIdentityProvider>();
+builder.Services.AddScoped<CognitoService>();
+
+
 // ── SignalR + Redis Backplane ─────────────────────────────────────────────────
 // SignalR handles WebSocket connections for real-time messaging.
 // The Redis backplane lets messages route across multiple containers —
@@ -105,6 +112,16 @@ if (!string.IsNullOrEmpty(cognitoUserPoolId))
                 ValidateIssuer = true,
                 ValidateAudience = false // Cognito access tokens don't include audience
             };
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = ctx =>
+                {
+                    if (ctx.Request.Cookies.TryGetValue("auth_token", out var token))
+                        ctx.Token = token;
+                    return Task.CompletedTask;
+                }
+            };
+
         });
 
     builder.Services.AddAuthorization();

@@ -10,25 +10,27 @@ namespace ChatSec.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly DynamoDbService _db;
+    private readonly CognitoService _cognito;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(DynamoDbService db, ILogger<AuthController> logger)
+    public AuthController(DynamoDbService db, CognitoService cognito, ILogger<AuthController> logger)
     {
-        _db = db;
-        _logger = logger;
+        _db      = db;
+        _cognito = cognito;
+        _logger  = logger;
     }
 
     // POST /api/auth/register
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        // Validate required fields
         if (string.IsNullOrWhiteSpace(request.Username) ||
             string.IsNullOrWhiteSpace(request.Password) ||
+            string.IsNullOrWhiteSpace(request.Email) ||
             string.IsNullOrWhiteSpace(request.PublicKey) ||
             string.IsNullOrWhiteSpace(request.SigningPublicKey))
         {
-            return BadRequest(new { error = "Username, password, public key, and signing public key are required." });
+            return BadRequest(new { error = "All fields are required." });
         }
 
         // Check username is not already taken
@@ -38,22 +40,25 @@ public class AuthController : ControllerBase
             return Conflict(new { error = "Username already exists." });
         }
 
-        // TODO (Phase 4): Replace mock userId with real Cognito sub
-        // var cognitoUserId = await _cognito.SignUpAsync(request.Username, request.Password, request.Email);
-        var userId = Guid.NewGuid().ToString();
+        // Create user in Cognito — returns the Cognito sub (UUID) which is our userId
+        var userId = await _cognito.SignUpAsync(request.Email, request.Password);
+
+        // Auto-confirm so the user can log in immediately (skips email verification)
+        await _cognito.AdminConfirmSignUpAsync(request.Email);
 
         var user = new User
         {
-            UserId           = userId,
-            Username         = request.Username,
-            PublicKey        = request.PublicKey,
-            SigningPublicKey  = request.SigningPublicKey,
-            CreatedAt        = DateTime.UtcNow.ToString("o") // ISO 8601 format
+            UserId          = userId,
+            Username        = request.Username,
+            Email           = request.Email,
+            PublicKey       = request.PublicKey,
+            SigningPublicKey = request.SigningPublicKey,
+            CreatedAt       = DateTime.UtcNow.ToString("o")
         };
 
         await _db.PutUserAsync(user);
 
-        _logger.LogInformation("Registered user {Username} with id {UserId}", user.Username, user.UserId);
+        _logger.LogInformation("Registered user {Username} with Cognito sub {UserId}", user.Username, user.UserId);
 
         return Ok(new { userId, message = "Registration successful." });
     }
@@ -68,26 +73,35 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = "Username and password are required." });
         }
 
+        // Look up the user by display username to get their email (Cognito login identifier)
         var user = await _db.GetUserByUsernameAsync(request.Username);
         if (user == null)
         {
-            // Return the same message whether user doesn't exist or password is wrong
-            // This prevents username enumeration attacks
             return Unauthorized(new { error = "Invalid username or password." });
         }
 
-        // TODO (Phase 4): Replace mock token with real Cognito JWT
-        // var tokens = await _cognito.InitiateAuthAsync(request.Username, request.Password);
-        var mockToken = Convert.ToBase64String(
-            System.Text.Encoding.UTF8.GetBytes($"{user.UserId}:{user.Username}:{DateTime.UtcNow:o}"));
+        // Cognito validates the password and issues a signed JWT Access Token
+        string accessToken;
+        try
+        {
+            accessToken = await _cognito.InitiateAuthAsync(user.Email, request.Password);
+        }
+        catch (Exception)
+        {
+            // Same message whether user doesn't exist or password is wrong — prevents username enumeration
+            return Unauthorized(new { error = "Invalid username or password." });
+        }
 
-        // POST /api/auth/login — sets HttpOnly cookie, returns user info only (no token)
-        Response.Cookies.Append("auth_token", mockToken, new CookieOptions
+        // Store the real Cognito JWT in an HttpOnly cookie
+        // HttpOnly = JavaScript cannot read it (XSS protection)
+        // Secure = only sent over HTTPS
+        // SameSite=Strict = not sent on cross-site requests (CSRF protection)
+        Response.Cookies.Append("auth_token", accessToken, new CookieOptions
         {
             HttpOnly = true,
             Secure   = true,
             SameSite = SameSiteMode.Strict,
-            Expires  = DateTimeOffset.UtcNow.AddHours(8)
+            Expires  = DateTimeOffset.UtcNow.AddHours(1) // Matches Cognito's 1-hour access token validity
         });
 
         return Ok(new { userId = user.UserId, username = user.Username });
@@ -100,6 +114,4 @@ public class AuthController : ControllerBase
         Response.Cookies.Delete("auth_token");
         return Ok(new { message = "Logged out." });
     }
-
-    
 }

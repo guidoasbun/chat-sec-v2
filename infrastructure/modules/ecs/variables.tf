@@ -59,3 +59,9 @@ variable "cognito_client_secret" {
   sensitive   = true
 }
 
+variable "dynamodb_kms_key_arn" {
+  description = "KMS key ARN used by DynamoDB tables (task role needs decrypt access)"
+  type        = string
+}
+
+
