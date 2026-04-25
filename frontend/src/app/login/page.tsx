@@ -92,17 +92,17 @@ export default function LoginPage() {
         onSubmit={handleLogin}
         className="bg-white p-8 rounded-lg shadow w-96 space-y-4"
       >
-        <h1 className="text-xl font-semibold">Sign In</h1>
+        <h1 className="text-xl text-gray-900 font-semibold">Sign In</h1>
 
         <input
-          className="w-full border rounded px-3 py-2 text-sm"
+          className="w-full border rounded px-3 py-2 text-sm text-gray-500"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required
         />
         <input
-          className="w-full border rounded px-3 py-2 text-sm"
+          className="w-full border rounded px-3 py-2 text-sm text-gray-500"
           type="password"
           placeholder="Password"
           value={password}

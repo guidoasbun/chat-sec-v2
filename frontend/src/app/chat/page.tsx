@@ -251,7 +251,7 @@ function ChatPageInner() {
     <div className="flex h-screen">
       <aside className="w-56 bg-gray-100 p-4 border-r flex flex-col gap-4">
         <div>
-          <h2 className="font-semibold mb-2">Online</h2>
+          <h2 className="font-semibold mb-2 text-green-900">Online</h2>
           <ul>
             {onlineUsers.map((u) => (
               <li key={u} className="text-sm py-1 text-black">
@@ -262,9 +262,9 @@ function ChatPageInner() {
         </div>
 
         <div className="border-t pt-4">
-          <h2 className="font-semibold mb-2">New Chat</h2>
+          <h2 className="font-semibold mb-2 text-gray-900">New Chat</h2>
           <input
-            className="w-full border rounded px-2 py-1 text-sm mb-2"
+            className="w-full border rounded px-2 py-1 text-sm mb-2 text-gray-900"
             placeholder="Their username"
             value={peerUsername}
             onChange={(e) => setPeerUsername(e.target.value)}
@@ -291,7 +291,7 @@ function ChatPageInner() {
         )}
 
         {!chatId && (
-          <div className="border-t pt-4">
+          <div className="border-t pt-4 text-gray-900">
             <h2 className="font-semibold mb-2">Join Chat</h2>
             <input
               id="join-input"
